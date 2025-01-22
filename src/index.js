@@ -1,20 +1,36 @@
 import { fetchBreeds, fetchCatByBreed } from './cat-api';
+import Notiflix from 'notiflix';
+import SlimSelect from 'slim-select';
 
 const breedsList = document.querySelector('.breed-select');
 const catInfo = document.querySelector('.cat-info');
+const loader = document.querySelector('.loader');
 breedsList.addEventListener('change', onChange);
 
+// catInfo.classList.add('isHidden');
+// loader.hidden = true;
+
+catInfo.hidden = true;
+loader.classList.add('isHidden');
+
 fetchBreeds()
-  .then(data => creatSelect(data))
-  .catch(err => console.log(err));
+  .then(data => {
+    Notiflix.Loading.standard('Loading data, please wait...');
+    catInfo.hidden = false;
+    creatSelect(data);
+    new SlimSelect({
+      select: breedsList,
+    });
 
-function onChange(evt) {
-  const breedID = evt.target.value;
-
-  fetchCatByBreed(breedID)
-    .then(catArr => creatMarkup(catArr))
-    .catch(err => console.log(err));
-}
+    Notiflix.Loading.remove();
+  })
+  .catch(err => {
+    console.log(err);
+    Notiflix.Loading.remove();
+    Notiflix.Notify.failure(
+      'Oops! Something went wrong! Try reloading the page!'
+    );
+  });
 
 function creatSelect(arr) {
   const markup = arr
@@ -22,8 +38,36 @@ function creatSelect(arr) {
       return `<option value = ${reference_image_id}> ${name}</option>`;
     })
     .join('');
+
+  //   breedsList.innerHTML = markup;
   breedsList.insertAdjacentHTML('beforeend', markup);
+
+  //   new SlimSelect({
+  //     select: breedsList,
+  //   });
 }
+
+function onChange(evt) {
+  const breedID = evt.target.value;
+
+  Notiflix.Loading.standard('Loading data, please wait...');
+
+  fetchCatByBreed(breedID)
+    .then(catArr => {
+      Notiflix.Loading.remove();
+      creatMarkup(catArr);
+    })
+
+    .catch(err => {
+      console.log(err);
+      Notiflix.Notify.failure(
+        'Oops! Something went wrong! Try reloading the page!'
+      );
+      Notiflix.Loading.remove();
+    });
+}
+
+//
 
 function creatMarkup(catObj) {
   // catObj виявився обєктом, як не дивно, breeds виявився масивом.
@@ -43,3 +87,17 @@ function creatMarkup(catObj) {
 
   catInfo.insertAdjacentHTML('beforeend', catMarkup);
 }
+
+//function creatSelect(arr) {
+//   //   const select = new SlimSelect({
+//   //     select: '#selectElement',
+//   //     data: countries,
+//   //     });
+
+//   const markup = arr
+//     .map(({ reference_image_id, name }) => {
+//       return `<option value = ${reference_image_id}> ${name}</option>`;
+//     })
+//     .join('');
+//   breedsList.insertAdjacentHTML('beforeend', markup);
+// }
